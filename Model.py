@@ -18,7 +18,7 @@ class DBHandler():
     We will save the local data to the output csv file every 100 labels added. Then we're gonna read next 100 rows and save as local table
     '''
     # columns of main table (which will be written in the output_file.csv) = ad_id, label, labeler_userid (user id is either tele_id or firstame//lastname) , advertiser_id, campaing_id
-    size_of_batch = 4 # how many ads we collect from data file and use as local. Default : 100
+    size_of_batch = 20 # how many ads we collect from data file and use as local. Default : 100
     ad_data_file_path = "item2.csv"
     local_result_table = pd.DataFrame([], columns=["ad_id", "label", "labeler_userid", "advertiser_id", "campaign_id"])
     result_file_path = 'result.csv'
@@ -53,7 +53,7 @@ class DBHandler():
     @staticmethod
     def add_to_local_result(ad:Ad, label, user_id):
         DBHandler.local_result_table =DBHandler.local_result_table.append({"ad_id": ad.id, "label": label, "labeler_userid":user_id,
-                                             "advertiser_id": ad.advertiser_id, "campaign_id":ad.campain_id}, ignore_index=True)/s
+                                             "advertiser_id": ad.advertiser_id, "campaign_id":ad.campain_id}, ignore_index=True)
         if len(DBHandler.local_result_table) >= DBHandler.size_of_batch:
             DBHandler.write_local_result_to_database()
 
@@ -66,7 +66,8 @@ class DBHandler():
             pass
         DBHandler.result_file = DBHandler.result_file.append(DBHandler.local_result_table)
         DBHandler.local_result_table = pd.DataFrame([],columns=["ad_id", "label", "labeler_userid", "advertiser_id", "campaign_id"])
-        DBHandler.result_file.to_csv(DBHandler.result_file_path)
+        DBHandler.result_file.t
+        o_csv(DBHandler.result_file_path)
 
 
     @staticmethod
