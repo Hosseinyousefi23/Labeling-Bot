@@ -30,16 +30,18 @@ class CommandAnalyzer():
                 user_id = str(update.message.from_user.first_name) + "//" + str(update.message.from_user.last_name)  # This is for the ones who don't have telegram username
 
         if user_id not in CommandAnalyzer.user_chatid: # Creating a Controller instance
-            print('hellllllllllllo')
-            CommandAnalyzer.user_chatid[user_id] = update.message.chat_id
+            if not callback:
+                CommandAnalyzer.user_chatid[user_id] = update.message.chat_id
+            else:
+                CommandAnalyzer.user_chatid[user_id] = update.callback_query.message.chat_id
             CommandAnalyzer.user_controller_objects[user_id] = Controller(user_id)
+
 
         if callback:
             message = update.callback_query.data
         else:
             message = update.message.text
         CommandAnalyzer.user_controller_objects[user_id].update = update
-        print(CommandAnalyzer.user_chatid)
         CommandAnalyzer.user_controller_objects[user_id].new_message(message, callback)
 
 
@@ -91,8 +93,12 @@ class Controller():
                 self.show_new_ad()
             if message == "show_tags":
                 self.show_tags()
+            if message == "/show_leaderboard1234":
+                #TODO : return most participating people
+                pass
             elif message in Ad.list_of_tags:
                 self.save_answer(message)
+                self.show_message("تگ انتخاب شده برای تبلیغ بالا👆 :   🔹{}🔹".format(message),edit = True)
                 self.show_new_ad()
             elif message == "/number_of_done":
                 self.show_number_of_done()
@@ -110,8 +116,8 @@ class Controller():
 
     def show_new_ad(self):
          # TODO : get new ad from db handler -> Create new Ad instance -> Show to user : img and caption with a markup
-        self.current_ad = DBHAndler.prepare_new_ad()
-        self.show_message(message = self.current_ad.title, photo_url=self.current_ad.image_url)
+        self.current_ad = DBHandler.prepare_new_ad()
+        self.show_message(message = "عنوان تبلیغ : {}".format(self.current_ad.title), photo_url=self.current_ad.image_url)
         # Here we are creating a button for showing tags
         keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -124,7 +130,8 @@ class Controller():
         self.show_message(answer, reply_markup= reply_markup, edit=True)
 
     def save_answer(self, label):
-        self.user_obj.labeled_ad(self.current_ad, label)
+        self.user_obj.label_ad(self.current_ad, label)
+
 
 
     def show_number_of_done(self):
