@@ -5,23 +5,12 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 import logging
 from Controller import *
 
-def handle_new_message(update, context):
-    new_message=message = update.message.text
-    bot = Bot("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY")
-    #CommandAnalyzer.bot = Bot("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY")
-    print(str(update.message.from_user.first_name))
-    bot.send_photo(update.message.chat_id, 'https://native.yektanet.com/static/media/upload/items/64433-250x165.jpg')
-
-
-
-
 def main():
 
-    updater = Updater("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY", use_context=True)
-    CommandAnalyzer.bot = Bot("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY")
+    updater = Updater("1892347135:AAE9YAaV1rqK9grjHxzOYKyqIvhm0YsDFzA", use_context=True)
+    CommandAnalyzer.bot = Bot("1892347135:AAE9YAaV1rqK9grjHxzOYKyqIvhm0YsDFzA")
 
     dp = updater.dispatcher
-
 
     dp.add_handler(CommandHandler(["start", "main_menu"], CommandAnalyzer.handle_new_message))
     dp.add_handler(CallbackQueryHandler(CommandAnalyzer.handle_new_callback, pattern=None))

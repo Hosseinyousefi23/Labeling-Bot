@@ -60,7 +60,7 @@ class DBHandler():
     @staticmethod
     def write_local_result_to_database():
         try:
-            print("reeeeeeeeeeeeeeeeeeeading")
+
             DBHandler.result_file = pd.read_csv(DBHandler.result_file_path)
         except:
             pass
