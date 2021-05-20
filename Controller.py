@@ -8,7 +8,6 @@ import logging
 # from CommandAnalyzer import *
 from Model import *
 
-
 class CommandAnalyzer():
     user_objects = {}
     user_chatid = {}
@@ -69,6 +68,7 @@ class CommandAnalyzer():
             CommandAnalyzer.user_controller_objects[user_id].show_message("بنظر میرسه که یه چیزی رو اشتباه وارد کردی :(")
 
 
+
 class Controller():
     '''
     Description:    Every instances of this class will manage a specific user works.
@@ -119,7 +119,7 @@ class Controller():
         self.current_ad = DBHandler.prepare_new_ad()
         self.show_message(message = "عنوان تبلیغ : {}".format(self.current_ad.title), photo_url=self.current_ad.image_url)
         # Here we are creating a button for showing tags
-        keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags')]]
+        keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags'),InlineKeyboardButton("چطوری؟", callback_data='/s')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         self.show_message(message="برای انتخاب موضوع، دکمه زیر رو بزن", reply_markup=reply_markup, edit=False)
 
