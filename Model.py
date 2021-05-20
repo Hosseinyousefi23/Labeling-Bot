@@ -3,7 +3,7 @@ import pandas as pd
 
 class Ad():
     tags_df = pd.read_csv("tags.csv")
-    list_of_tags = list(tags_df.cat.unique())
+    list_of_tags = list(tags_df.subcat.unique())
     del list_of_tags[-3:-1]
 
     def __init__(self, id, title, image, campain_id, advertiser_id):
@@ -66,8 +66,7 @@ class DBHandler():
             pass
         DBHandler.result_file = DBHandler.result_file.append(DBHandler.local_result_table)
         DBHandler.local_result_table = pd.DataFrame([],columns=["ad_id", "label", "labeler_userid", "advertiser_id", "campaign_id"])
-        DBHandler.result_file.t
-        o_csv(DBHandler.result_file_path)
+        DBHandler.result_file.to_csv(DBHandler.result_file_path)
 
 
     @staticmethod

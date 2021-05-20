@@ -119,12 +119,18 @@ class Controller():
         self.current_ad = DBHandler.prepare_new_ad()
         self.show_message(message = "عنوان تبلیغ : {}".format(self.current_ad.title), photo_url=self.current_ad.image_url)
         # Here we are creating a button for showing tags
-        keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags'),InlineKeyboardButton("چطوری؟", callback_data='/s')]]
+        keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         self.show_message(message="برای انتخاب موضوع، دکمه زیر رو بزن", reply_markup=reply_markup, edit=False)
 
     def show_tags(self):
-        keyboard = [[InlineKeyboardButton(tag, callback_data=tag)] for tag in Ad.list_of_tags]
+        keyboard = list([])
+        for tag_num in np.arange(0, len(Ad.list_of_tags), step=2):
+            if tag_num == len(Ad.list_of_tags)-1 :
+                keyboard.append([InlineKeyboardButton(Ad.list_of_tags[tag_num], callback_data=Ad.list_of_tags[tag_num])])
+                break
+            keyboard.append([InlineKeyboardButton(Ad.list_of_tags[tag_num], callback_data=Ad.list_of_tags[tag_num]),
+                         InlineKeyboardButton(Ad.list_of_tags[tag_num+1], callback_data=Ad.list_of_tags[tag_num+1])])
         reply_markup = InlineKeyboardMarkup(keyboard)
         answer = "موضوع مناسب رو انتخاب کن"
         self.show_message(answer, reply_markup= reply_markup, edit=True)
