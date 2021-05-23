@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+import os
 
 class Ad():
     tags_df = pd.read_csv("tags.csv")
-    list_of_tags = list(tags_df.subcat.unique())
-    del list_of_tags[-3:-1]
+    list_of_tags_without_nothing = list(tags_df.tag.unique())
+    list_of_tags = list_of_tags_without_nothing + ["هیچکدام",]
 
     def __init__(self, id, title, image, campain_id, advertiser_id):
         self.id = id
@@ -18,9 +19,9 @@ class DBHandler():
     We will save the local data to the output csv file every 100 labels added. Then we're gonna read next 100 rows and save as local table
     '''
     # columns of main table (which will be written in the output_file.csv) = ad_id, label, labeler_userid (user id is either tele_id or firstame//lastname) , advertiser_id, campaing_id
-    size_of_batch = 20 # how many ads we collect from data file and use as local. Default : 100
+    size_of_batch = 5 # how many ads we collect from data file and use as local. Default : 100
     ad_data_file_path = "item2.csv"
-    local_result_table = pd.DataFrame([], columns=["ad_id", "label", "labeler_userid", "advertiser_id", "campaign_id"])
+    local_result_table = pd.DataFrame([], columns=["ad_id", "labels", "labeler_userid", "advertiser_id", "campaign_id"])
     result_file_path = 'result.csv'
     result_file = pd.DataFrame([])
     local_table = pd.DataFrame([])
@@ -51,8 +52,8 @@ class DBHandler():
         DBHandler.input_file_table_pointer += DBHandler.size_of_batch
         DBHandler.local_table_pointer = 0
     @staticmethod
-    def add_to_local_result(ad:Ad, label, user_id):
-        DBHandler.local_result_table =DBHandler.local_result_table.append({"ad_id": ad.id, "label": label, "labeler_userid":user_id,
+    def add_to_local_result(ad:Ad, labels, user_id):
+        DBHandler.local_result_table =DBHandler.local_result_table.append({"ad_id": ad.id, "labels": labels, "labeler_userid":user_id,
                                              "advertiser_id": ad.advertiser_id, "campaign_id":ad.campain_id}, ignore_index=True)
         if len(DBHandler.local_result_table) >= DBHandler.size_of_batch:
             DBHandler.write_local_result_to_database()
@@ -60,12 +61,11 @@ class DBHandler():
     @staticmethod
     def write_local_result_to_database():
         try:
-
-            DBHandler.result_file = pd.read_csv(DBHandler.result_file_path)
+            DBHandler.result_file = pd.read_csv(DBHandler.result_file_path, index_col=0)
         except:
             pass
         DBHandler.result_file = DBHandler.result_file.append(DBHandler.local_result_table)
-        DBHandler.local_result_table = pd.DataFrame([],columns=["ad_id", "label", "labeler_userid", "advertiser_id", "campaign_id"])
+        DBHandler.local_result_table = pd.DataFrame([],columns=["ad_id", "labels", "labeler_userid", "advertiser_id", "campaign_id"])
         DBHandler.result_file.to_csv(DBHandler.result_file_path)
 
 
@@ -84,11 +84,10 @@ class User():
         self.user_id = tele_id
         self.labeled_ad = dict()
 
-    def label_ad(self, ad_obj, label):
-        # TODO: add to main table in db
-        DBHandler.add_to_local_result(ad_obj, label, self.user_id)
+    def label_ad(self, ad_obj, labels):
+        DBHandler.add_to_local_result(ad_obj, labels, self.user_id)
         # add to local ads dict
-        self.labeled_ad[ad_obj] = label
+        self.labeled_ad[ad_obj] = labels
 
 
 
