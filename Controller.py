@@ -24,13 +24,16 @@ class CommandAnalyzer():
             if user_id == None :
                 user_id = str(update.callback_query.from_user.first_name) + "//" + str(update.callback_query.from_user.last_name)  # This is for the ones who don't have telegram username
         else:
-            user_id = update.message.from_user.username
-            if user_id == None :
-                user_id = str(update.message.from_user.first_name) + "//" + str(update.message.from_user.last_name)  # This is for the ones who don't have telegram username
-
+            try:
+                user_id = update.message.from_user.username
+                if user_id == None :
+                    user_id = str(update.message.from_user.first_name) + "//" + str(update.message.from_user.last_name)  # This is for the ones who don't have telegram username
+            except:
+                pass
         if user_id not in CommandAnalyzer.user_chatid: # Creating a Controller instance
             if not callback:
                 CommandAnalyzer.user_chatid[user_id] = update.message.chat_id
+                print(update.message.chat_id)
             else:
                 CommandAnalyzer.user_chatid[user_id] = update.callback_query.message.chat_id
             CommandAnalyzer.user_controller_objects[user_id] = Controller(user_id)
@@ -91,6 +94,9 @@ class Controller():
         self.request = None
         self.callback = False
         self.current_selected_tags = [] # we print green check emoji next to the selected tags. For this we have to save which tags are selected by the user for the current ad//// we use this var in show_tags_method
+    @staticmethod
+    def reload_onjects():
+        pass # TODO : build up Controller and User objects from sqlalchemy
 
     def new_message(self, message, callback=False):
         self.callback = callback # to remain that what was the last message
@@ -103,8 +109,11 @@ class Controller():
             if message == "show_tags":
                 self.show_tags()
             if message == "/show_leaderboard1234":
-                #TODO : return most participating people
-                pass
+                self.show_leaderboard()
+
+            if message == "/show_descriptions":
+                self.show_description()
+
             elif message in Ad.list_of_tags:
                 if message in self.current_selected_tags:
                     self.current_selected_tags.remove(message)
@@ -167,6 +176,11 @@ class Controller():
         reply_markup = InlineKeyboardMarkup(keyboard)
         answer = "موضوعات مرتبط رو انتخاب کن"
         self.show_message(answer, reply_markup= reply_markup, edit=True)
+    def show_description(self):
+        descriptions = ["✅ {}  :\n⬅ {}\n".format(Ad.tags_df.tag[i], Ad.tags_df.description[i]) for i in range(len(Ad.tags_df))]
+
+        message = "\n".join(descriptions)
+        self.show_message(message)
 
     def save_answer(self, list_of_labels):
         try:
@@ -174,8 +188,8 @@ class Controller():
         except:
             self.show_message("یکم گیج شدم :). لطفا با /show_ad ادامه بده.")
 
-
-
+    def show_leaderboard(self):
+        pass
     def show_number_of_done(self):
         number_of_done = len(self.user_obj.labeled_ad)
         self.show_message("تعداد تبلیغ تگ زده شده: {} \n برای ادامه میتونی از /show_ad  استفاده کنی :)".format(number_of_done))
