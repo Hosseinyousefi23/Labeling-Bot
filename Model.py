@@ -1,32 +1,53 @@
 import numpy as np
 import pandas as pd
-import os
+import os.path
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 
-class Ad():
+from Controller import *
+from sqlalchemy import Column, Integer, String, JSON, BigInteger
+import logging
+
+class Ad(Alchemy.Base):
+
     tags_df = pd.read_csv("tags.csv")
     list_of_tags_without_nothing = list(tags_df.tag.unique())
     list_of_tags = list_of_tags_without_nothing + ["هیچکدام",]
 
+    ######################################################################### Adding class to ORM table
+    __tablename__ = 'ads'
+    __table_args__ = {'extend_existing': True}
+    id = Column(BigInteger, primary_key=True)
+    image_url = Column(String)
+    title = Column(String)
+    advertiser_id = Column(Integer)
+    #########################################################################
+
     def __init__(self, id, title, image, campain_id, advertiser_id):
-        self.id = id
+        self.id = int(id)
         self.image_url = image # read from main table in dbhandler
         self.title = title
-        self.advertiser_id = advertiser_id
-        self.campain_id = campain_id
+        self.advertiser_id = int(advertiser_id)
+        self.campain_id = int(campain_id)
+
 
 class DBHandler():
     '''
     We will save the local data to the output csv file every 100 labels added. Then we're gonna read next 100 rows and save as local table
     '''
     # columns of main table (which will be written in the output_file.csv) = ad_id, label, labeler_userid (user id is either tele_id or firstame//lastname) , advertiser_id, campaing_id
-    size_of_batch = 5 # how many ads we collect from data file and use as local. Default : 100
-    ad_data_file_path = "item2.csv"
+    size_of_batch = 30 # how many ads we collect from data file and use as local. Default : 100
+    ad_data_file_path = "items.csv"
     local_result_table = pd.DataFrame([], columns=["ad_id", "labels", "labeler_userid", "advertiser_id", "campaign_id"])
     result_file_path = 'result.csv'
     result_file = pd.DataFrame([])
     local_table = pd.DataFrame([])
     local_table_pointer = 0 # pointer is a row number in the data_file
-    input_file_table_pointer = 0 # pointer is a row number in the data_file
+
+    if os.path.isfile(result_file_path):
+        input_file_table_pointer = len(pd.read_csv(result_file_path))
+    else:
+        input_file_table_pointer = 0 # pointer is a row number in the data_file
     there_is_no_more_data = False
 
     @staticmethod
@@ -38,10 +59,15 @@ class DBHandler():
             DBHandler.local_table_pointer=0
         row = DBHandler.local_table.iloc[DBHandler.local_table_pointer]
         DBHandler.local_table_pointer += 1
-        return(Ad(row.id, row.title, row.image, row.campaign_id, row.advertiser_id))
+        # logging.info("local table pointer = {}, ") # TODO : log which ad is being showed to wich person. which row are we in input db
+        new_ad_obj = Ad(row.id, row.title, row.image, row.campaign_id, row.advertiser_id)
+        Alchemy.objects_to_update_in_orm_db.append(new_ad_obj)
+
+        return(new_ad_obj)
 
     @staticmethod
     def fetch_new_batch():
+        Alchemy.update_orm()
         if DBHandler.there_is_no_more_data:
             DBHandler.end_of_database()
             return(0)
@@ -73,21 +99,26 @@ class DBHandler():
     def end_of_database():
         pass
 
+class User(Alchemy.Base):
+    ######################################################################### Adding class to ORM table
+    __tablename__ = 'users'
+    __table_args__ = {'extend_existing': True}
+    user_id = Column(String, primary_key=True)
+    chat_id = Column(BigInteger)
+    labeled_ad = Column(JSON)
+    #########################################################################
 
-
-
-
-class User():
     def __init__(self, tele_id):
         self.chat_id = None
-        self.first_name = None # = first name + " " + last name ////// Sometimes people don't have username :)
         self.user_id = tele_id
         self.labeled_ad = dict()
 
     def label_ad(self, ad_obj, labels):
+        Alchemy.objects_to_update_in_orm_db.append(self)
         DBHandler.add_to_local_result(ad_obj, labels, self.user_id)
         # add to local ads dict
-        self.labeled_ad[ad_obj] = labels
+        self.labeled_ad[str(ad_obj.id)] = labels
+
 
 
 

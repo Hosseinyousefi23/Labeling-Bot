@@ -1,78 +1,45 @@
 import pandas as pd
 import numpy as np
-
 from telegram import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardButton, InlineKeyboardMarkup, Bot, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ConversationHandler
 import logging
 
-# from CommandAnalyzer import *
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+
+from sqlalchemy import Column, Integer, String, JSON, Numeric, BigInteger
+class Alchemy():
+    objects_to_update_in_orm_db = list([])
+    engine = create_engine('sqlite:///labeling_bot_objects.db', echo = True)
+    Base = declarative_base()
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    @staticmethod
+    def update_orm():
+
+        with Alchemy.Session() as session:
+            for obj in Alchemy.objects_to_update_in_orm_db:
+                #################
+                local_object = session.merge(obj)
+                session.add(local_object)
+                session.commit()
+                #################
+
+            Alchemy.objects_to_update_in_orm_db = []
+
+
 from Model import *
-
-class CommandAnalyzer():
-    user_objects = {}
-    user_chatid = {}
-    user_controller_objects = {}
-    bot = Bot("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY")
+from Model import User
 
 
-    def handle_new_callback(update, context):
-        CommandAnalyzer.handle_new_message(update, context, callback=True)
+class Controller(Alchemy.Base):
 
-    def handle_new_message(update, context, callback=False):
-        if callback:
-            user_id = update.callback_query.from_user.username
-            if user_id == None :
-                user_id = str(update.callback_query.from_user.first_name) + "//" + str(update.callback_query.from_user.last_name)  # This is for the ones who don't have telegram username
-        else:
-            try:
-                user_id = update.message.from_user.username
-                if user_id == None :
-                    user_id = str(update.message.from_user.first_name) + "//" + str(update.message.from_user.last_name)  # This is for the ones who don't have telegram username
-            except:
-                pass
-        if user_id not in CommandAnalyzer.user_chatid: # Creating a Controller instance
-            if not callback:
-                CommandAnalyzer.user_chatid[user_id] = update.message.chat_id
-                print(update.message.chat_id)
-            else:
-                CommandAnalyzer.user_chatid[user_id] = update.callback_query.message.chat_id
-            CommandAnalyzer.user_controller_objects[user_id] = Controller(user_id)
-
-
-        if callback:
-            message = update.callback_query.data
-        else:
-            message = update.message.text
-        CommandAnalyzer.user_controller_objects[user_id].update = update
-        CommandAnalyzer.user_controller_objects[user_id].new_message(message, callback)
-
-
-
-
-
-    def show_to_user(user_id, text, photo_url=None, reply_markup = None):
-        if photo_url == None :
-            CommandAnalyzer.bot.send_message(chat_id=CommandAnalyzer.user_chatid[user_id], text=text, reply_markup=reply_markup)
-        if photo_url != None :
-            CommandAnalyzer.bot.send_photo(chat_id= CommandAnalyzer.user_chatid[user_id], photo=photo_url, caption=text)
-
-
-
-
-
-    def edit_message_text(user_id, message="hello",photo_url=None, reply_markup=None): #TODO: revise this shit
-        try:
-            if CommandAnalyzer.user_controller_objects[user_id].callback:
-                CommandAnalyzer.user_controller_objects[user_id].update.callback_query.edit_message_text(message, reply_markup=reply_markup)
-            else:
-                CommandAnalyzer.user_controller_objects[user_id].update.message.edit_text(message, reply_markup=reply_markup)
-
-        except:
-            CommandAnalyzer.user_controller_objects[user_id].show_message("بنظر میرسه که یه چیزی رو اشتباه وارد کردی :(")
-
-
-
-class Controller():
+    ######################################################################### Adding class to ORM table
+    __tablename__ = 'controllers'
+    __table_args__ = {'extend_existing': True}
+    user_id = Column(String, primary_key=True)
+    #########################################################################
 
     # We use these to say thanks to users every 20 labels.
     Gratitudes = ["زحمتی که می‌کشی خیلی برامون ارزشمنده. ممنون ❤️","خسته نباشی 😇","تشکر فراوان بابت وقتی که داری میذاری ☺️",
@@ -80,23 +47,22 @@ class Controller():
                   "سیاهی لشکر نیاید به کار  *** یکی مرد جنگی به از صدهزار \nاینم یه بیت شعر جهت رفع خستگی شما 😄","شعر جهت رفع خستگی : \nگفتند یافت می‌نشود جسته‌ایم ما \nگفت آن که یافت می‌نشود آنم آرزوست😏 \n",
                   "شعر خوب برای آدم خوب💐:))\nهر که را می‌بینم از کار جهان در محنت است\nکار ما داریم کز کار جهان آسوده‌ایم",
                   "این شعر برای در رفتن خستگیه :)👇\nنخش هر قدر طولانی، همان اندازه تنها تر \nکسی دلتنگی یک بادبادک را نمی‌فهمد 🪁"]
-    gratitude_cycle = 7 # We will send gratitude after every Controller.gratitude_cycle ads labeled
+    gratitude_cycle = 10 # We will send gratitude after every Controller.gratitude_cycle ads labeled
     '''
     Description:    Every instances of this class will manage a specific user works.
                     this object is an intermediary between CmdAnalyzer and userDB
     '''
     def __init__(self, user_id):
         self.user_id = user_id
-        self.user_obj = User(user_id)# TODO : Create a User instance
+        CommandAnalyzer.user_objects[self.user_id] = User(user_id)
+        Alchemy.objects_to_update_in_orm_db.append(CommandAnalyzer.user_objects[self.user_id])
+
         self.current_ad = None #The add that user is labelin at the current moment
         self.update = None
         self.state = 0
         self.request = None
         self.callback = False
         self.current_selected_tags = [] # we print green check emoji next to the selected tags. For this we have to save which tags are selected by the user for the current ad//// we use this var in show_tags_method
-    @staticmethod
-    def reload_onjects():
-        pass # TODO : build up Controller and User objects from sqlalchemy
 
     def new_message(self, message, callback=False):
         self.callback = callback # to remain that what was the last message
@@ -108,8 +74,12 @@ class Controller():
                 self.show_new_ad()
             if message == "show_tags":
                 self.show_tags()
+            if message == "commit":
+                self.commit()
             if message == "/show_leaderboard1234":
                 self.show_leaderboard()
+            if message == "/export_number_of_dones":
+                self.export_number_of_dones()
 
             if message == "/show_descriptions":
                 self.show_description()
@@ -154,8 +124,15 @@ class Controller():
         keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         self.show_message(message="برای انتخاب موضوعات، دکمه زیر رو بزن 😎", reply_markup=reply_markup, edit=False)
-        if len(self.user_obj.labeled_ad)% Controller.gratitude_cycle == Controller.gratitude_cycle-1:# Saying Thanks for participation
+        if len(CommandAnalyzer.user_objects[self.user_id].labeled_ad)% Controller.gratitude_cycle == Controller.gratitude_cycle-1:# Saying Thanks for participation
             self.show_message(np.random.choice(Controller.Gratitudes))
+
+    def export_number_of_dones(self):
+        df = pd.DataFrame([], columns=["id","number_of_labels"])
+        for obj in list(CommandAnalyzer.user_objects.values()):
+            df = df.append({"id":obj.user_id, "number_of_labels":len(obj.labeled_ad)}, ignore_index=True)
+        df.to_csv("number_of_labels.csv")
+
 
     def show_tags(self):
         keyboard = list([])
@@ -184,17 +161,115 @@ class Controller():
 
     def save_answer(self, list_of_labels):
         try:
-            self.user_obj.label_ad(self.current_ad, list_of_labels)
+            CommandAnalyzer.user_objects[self.user_id].label_ad(self.current_ad, list_of_labels)
         except:
             self.show_message("یکم گیج شدم :). لطفا با /show_ad ادامه بده.")
 
-    def show_leaderboard(self):
-        pass
+    def show_leaderboard(self):# Todo : find the most participating people and show them
+        count_of_labels={}
+        for i in list(CommandAnalyzer.user_objects.values()):
+            count_of_labels[i.user_id] = len(i.labeled_ad)
+        sort_orders = sorted(count_of_labels.items(), key=lambda x: x[1], reverse=True)
+        message = ""
+        for i in range(10):
+            if i < len(sort_orders):
+                if i == 0:
+                    message+= "{}. {} 🏆\n".format(i+1, sort_orders[i][0])
+                elif i == 0:
+                    message += "{}. {} 🥈\n".format(i+1, sort_orders[i][0])
+                elif i == 2:
+                    message += "{}. {} 🥉\n".format(i+1, sort_orders[i][0])
+                else:
+                    message += "{}. {} \n".format(i+1, sort_orders[i][0])
+            else:
+                break
+            self.show_message(message)
+
+
     def show_number_of_done(self):
-        number_of_done = len(self.user_obj.labeled_ad)
+        number_of_done = len(CommandAnalyzer.user_objects[self.user_id].labeled_ad)
         self.show_message("تعداد تبلیغ تگ زده شده: {} \n برای ادامه میتونی از /show_ad  استفاده کنی :)".format(number_of_done))
 
+class CommandAnalyzer():
+    user_objects = {}
+    user_chatid = {}
+    if Alchemy.engine.dialect.has_table(Alchemy.engine.connect(), "users"):
+        objects = Alchemy.session.query(User).all()
+        for obj in objects:
+            user_objects[obj.user_id] = obj
+            user_chatid[obj.user_id] = obj.chat_id
+
+    user_controller_objects = {}
+    if Alchemy.engine.dialect.has_table(Alchemy.engine.connect(), "controllers"):
+        objects = Alchemy.session.query(Controller).all()
+        for obj in objects:
+            user_controller_objects[obj.user_id] = obj
+
+
+    bot = Bot("1515031822:AAFj9Z8AFJeXar0UuSmdaKp9Nn22nGY6AjY")
+
+    def handle_new_callback(update, context):
+        CommandAnalyzer.handle_new_message(update, context, callback=True)
+
+    def handle_new_message(update, context, callback=False):
+        if callback:
+            user_id = update.callback_query.from_user.username
+            if user_id == None :
+                user_id = str(update.callback_query.from_user.first_name) + "//" + str(update.callback_query.from_user.last_name)  # This is for the ones who don't have telegram username
+        else:
+            try:
+                user_id = update.message.from_user.username
+                if user_id == None :
+                    user_id = str(update.message.from_user.first_name) + "//" + str(update.message.from_user.last_name)  # This is for the ones who don't have telegram username
+            except:
+                pass
+        if user_id not in CommandAnalyzer.user_chatid: # Creating a Controller instance
+            if not callback:
+                CommandAnalyzer.user_chatid[user_id] = update.message.chat_id
+            else:
+                CommandAnalyzer.user_chatid[user_id] = update.callback_query.message.chat_id
+
+            CommandAnalyzer.user_controller_objects[user_id] = Controller(user_id)
+            CommandAnalyzer.user_objects[user_id].chat_id = CommandAnalyzer.user_chatid[user_id]
+            Alchemy.objects_to_update_in_orm_db.append(CommandAnalyzer.user_controller_objects[user_id])
 
 
 
 
+
+
+
+        if callback:
+            message = update.callback_query.data
+        else:
+            message = update.message.text
+        CommandAnalyzer.user_controller_objects[user_id].update = update
+        CommandAnalyzer.user_controller_objects[user_id].new_message(message, callback)
+
+
+
+
+
+    def show_to_user(user_id, text, photo_url=None, reply_markup = None):
+        if photo_url == None :
+            CommandAnalyzer.bot.send_message(chat_id=CommandAnalyzer.user_chatid[user_id], text=text, reply_markup=reply_markup)
+        if photo_url != None :
+            CommandAnalyzer.bot.send_photo(chat_id= CommandAnalyzer.user_chatid[user_id], photo=photo_url, caption=text)
+
+
+
+
+    def edit_message_text(user_id, message="hello",photo_url=None, reply_markup=None):
+        try:
+            if CommandAnalyzer.user_controller_objects[user_id].callback:
+                CommandAnalyzer.user_controller_objects[user_id].update.callback_query.edit_message_text(message, reply_markup=reply_markup)
+            else:
+                CommandAnalyzer.user_controller_objects[user_id].update.message.edit_text(message, reply_markup=reply_markup)
+
+        except:
+            CommandAnalyzer.user_controller_objects[user_id].show_message("بنظر میرسه که یه چیزی رو اشتباه وارد کردی :(")
+
+
+
+
+Alchemy.Base.metadata.create_all(Alchemy.engine)
