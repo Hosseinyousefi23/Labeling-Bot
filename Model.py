@@ -30,7 +30,6 @@ class Ad(Alchemy.Base):
         self.advertiser_id = int(advertiser_id)
         self.campain_id = int(campain_id)
 
-
 class DBHandler():
     '''
     We will save the local data to the output csv file every 100 labels added. Then we're gonna read next 100 rows and save as local table
@@ -49,6 +48,7 @@ class DBHandler():
     else:
         input_file_table_pointer = 0 # pointer is a row number in the data_file
     there_is_no_more_data = False
+
 
     @staticmethod
     def prepare_new_ad(): # it should return an Ad instance
@@ -98,6 +98,12 @@ class DBHandler():
     @staticmethod
     def end_of_database():
         pass
+
+
+
+
+
+
 
 class User(Alchemy.Base):
     ######################################################################### Adding class to ORM table

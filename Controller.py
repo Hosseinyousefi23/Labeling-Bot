@@ -175,7 +175,7 @@ class Controller(Alchemy.Base):
             if i < len(sort_orders):
                 if i == 0:
                     message+= "{}. {} 🏆\n".format(i+1, sort_orders[i][0])
-                elif i == 0:
+                elif i == 1:
                     message += "{}. {} 🥈\n".format(i+1, sort_orders[i][0])
                 elif i == 2:
                     message += "{}. {} 🥉\n".format(i+1, sort_orders[i][0])
@@ -183,7 +183,7 @@ class Controller(Alchemy.Base):
                     message += "{}. {} \n".format(i+1, sort_orders[i][0])
             else:
                 break
-            self.show_message(message)
+        self.show_message(message)
 
 
     def show_number_of_done(self):
