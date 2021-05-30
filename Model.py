@@ -71,7 +71,7 @@ class DBHandler():
         if DBHandler.there_is_no_more_data:
             DBHandler.end_of_database()
             return(0)
-        all_items = pd.read_csv(DBHandler.ad_data_file_path)
+        all_items = pd.read_csv(DBHandler.ad_data_file_path, index_col=0)
         DBHandler.local_table = all_items.iloc[DBHandler.input_file_table_pointer: DBHandler.input_file_table_pointer+DBHandler.size_of_batch]
         if len(DBHandler.local_table) <DBHandler.size_of_batch :
             DBHandler.there_is_no_more_data = True

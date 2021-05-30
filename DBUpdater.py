@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 
 class DBUpdater():
+    all_items_path = 'all_items.csv'
+    items_path = 'items.csv'
     @staticmethod
     def call_native_api(from_date=10, to_date=1):
         from datetime import datetime, timedelta
@@ -50,22 +52,24 @@ class DBUpdater():
     def merge_two_df(from_takhlis,all_items_csv): # what ever you can solve with naming . do not solve with comment
 
         new_items_df = pd.merge(from_takhlis,all_items_csv, how='inner', on='ad_id')
-        #drop duplicates and choose most clicked
-        pass
+        return(new_items_df)
+
 
     @staticmethod
     def prepare_items_csv():
-        all_items = pd.read_csv(item_path)
+        all_items = pd.read_csv(DBUpdater.all_items_path)
         del all_items['clicked']
         del all_items['viewed']
-        DBUpdater.merge_two_df(from_takhlis, all_items)
+        from_takhlis = DBUpdater.call_native_api()
+        new_items = DBUpdater.merge_two_df(from_takhlis, all_items)
+        new_items = DBUpdater.remove_duplicates(new_items)
+        new_items.to_csv(DBUpdater.items_path)
 
     @staticmethod
     def remove_duplicates(new_df):
-        existing_items =pd.read_csv('items.csv')
-        for ad in new_df.iterrows():
-            pass
-
-
-        pass
-
+        existing_items =pd.read_csv(DBUpdater.items_path, index_col=0)
+        start_index = len(existing_items)
+        appened_items = existing_items.append(new_df,ignore_index=True)
+        unique_items = appened_items.drop_duplicates(subset=["ad_title", "image"], keep="first")
+        most_clicked = unique_items[unique_items.clicked>100]
+        return(most_clicked)
