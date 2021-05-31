@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
+import os
 
 class DBUpdater():
     all_items_path = 'all_items.csv'
     items_path = 'items.csv'
     @staticmethod
-    def call_native_api(from_date=10, to_date=1):
+    def call_native_api(from_date=5, to_date=1):
         from datetime import datetime, timedelta
         FROM_DATE = datetime.now() - timedelta(days=from_date)
         TO_DATE = datetime.now() - timedelta(days=to_date)
@@ -50,7 +51,6 @@ class DBUpdater():
         items = None #Free up ram's space
     @staticmethod
     def merge_two_df(from_takhlis,all_items_csv): # what ever you can solve with naming . do not solve with comment
-
         new_items_df = pd.merge(from_takhlis,all_items_csv, how='inner', on='ad_id')
         return(new_items_df)
 
@@ -63,13 +63,20 @@ class DBUpdater():
         from_takhlis = DBUpdater.call_native_api()
         new_items = DBUpdater.merge_two_df(from_takhlis, all_items)
         new_items = DBUpdater.remove_duplicates(new_items)
+        if os.path.isfile(DBUpdater.items_path):
+            existing_items = pd.read_csv(DBUpdater.items_path, index_col=0)
+            new_items = existing_items.append(new_items,ignore_index=True)
         new_items.to_csv(DBUpdater.items_path)
 
     @staticmethod
     def remove_duplicates(new_df):
-        existing_items =pd.read_csv(DBUpdater.items_path, index_col=0)
+        if os.path.isfile(DBUpdater.items_path):
+            existing_items =pd.read_csv(DBUpdater.items_path, index_col=0)
+        else:
+            existing_items = pd.DataFrame([],columns=new_df.columns)
         start_index = len(existing_items)
         appened_items = existing_items.append(new_df,ignore_index=True)
-        unique_items = appened_items.drop_duplicates(subset=["ad_title", "image"], keep="first")
-        most_clicked = unique_items[unique_items.clicked>100]
+        unique_items = appened_items.drop_duplicates(subset=["title", "image"], keep="first")
+        new_ones = unique_items.iloc[start_index: , :]
+        most_clicked = new_ones[new_ones.clicked>500]
         return(most_clicked)

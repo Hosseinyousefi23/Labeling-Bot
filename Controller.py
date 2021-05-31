@@ -3,7 +3,7 @@ import numpy as np
 from telegram import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardButton, InlineKeyboardMarkup, Bot, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, ConversationHandler
 import logging
-
+from DBUpdater import *
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -42,12 +42,7 @@ class Controller(Alchemy.Base):
     #########################################################################
 
     # We use these to say thanks to users every 20 labels.
-    Gratitudes = ["زحمتی که می‌کشی خیلی برامون ارزشمنده. ممنون ❤️","خسته نباشی 😇","تشکر فراوان بابت وقتی که داری میذاری ☺️",
-                  "خیر از جوونی‌ت ببینی 😌","ماشالا پهلوان :))","هر یه دونه تگی که میزنی دقت الگوریتم‌های ما رو بالاتر میبره. مرسی 🥰",
-                  "سیاهی لشکر نیاید به کار  *** یکی مرد جنگی به از صدهزار \nاینم یه بیت شعر جهت رفع خستگی شما 😄","شعر جهت رفع خستگی : \nگفتند یافت می‌نشود جسته‌ایم ما \nگفت آن که یافت می‌نشود آنم آرزوست😏 \n",
-                  "شعر خوب برای آدم خوب💐:))\nهر که را می‌بینم از کار جهان در محنت است\nکار ما داریم کز کار جهان آسوده‌ایم",
-                  "این شعر برای در رفتن خستگیه :)👇\nنخش هر قدر طولانی، همان اندازه تنها تر \nکسی دلتنگی یک بادبادک را نمی‌فهمد 🪁"]
-    gratitude_cycle = 10 # We will send gratitude after every Controller.gratitude_cycle ads labeled
+    show_poem_cycle = 10 # We will send gratitude after every Controller.gratitude_cycle ads labeled
     '''
     Description:    Every instances of this class will manage a specific user works.
                     this object is an intermediary between CmdAnalyzer and userDB
@@ -56,8 +51,7 @@ class Controller(Alchemy.Base):
         self.user_id = user_id
         CommandAnalyzer.user_objects[self.user_id] = User(user_id)
         Alchemy.objects_to_update_in_orm_db.append(CommandAnalyzer.user_objects[self.user_id])
-
-        self.current_ad = None #The add that user is labelin at the current moment
+        self.current_ad = None #The ad that user is labelin at the current moment
         self.update = None
         self.state = 0
         self.request = None
@@ -124,8 +118,8 @@ class Controller(Alchemy.Base):
         keyboard = [[InlineKeyboardButton("🏷🏷🏷 نمایش دسته بندی ها", callback_data='show_tags')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         self.show_message(message="برای انتخاب موضوعات، دکمه زیر رو بزن 😎", reply_markup=reply_markup, edit=False)
-        if len(CommandAnalyzer.user_objects[self.user_id].labeled_ad)% Controller.gratitude_cycle == Controller.gratitude_cycle-1:# Saying Thanks for participation
-            self.show_message(np.random.choice(Controller.Gratitudes))
+        if len(CommandAnalyzer.user_objects[self.user_id].labeled_ad)% Controller.show_poem_cycle == Controller.show_poem_cycle-1:# Saying Thanks for participation
+            self.show_message("یه بیت شعر زیبا برای تشکر و رفع خستگی ( این پیام هر {} تبلیغ یکبار فرستاده میشه) \n  ----------- \n {}".format(Controller.show_poem_cycle, CommandAnalyzer.user_objects[self.user_id].prepare_new_poem()))
 
     def export_number_of_dones(self):
         df = pd.DataFrame([], columns=["id","number_of_labels"])
