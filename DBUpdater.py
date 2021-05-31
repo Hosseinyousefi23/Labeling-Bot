@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
+import psycopg2
+import pandas as pd
 
 class DBUpdater():
     all_items_path = 'all_items.csv'
@@ -20,13 +22,12 @@ class DBUpdater():
                                  '&end=%s') % (FROM_DATE.strftime(DATETIME_FORMAT), TO_DATE.strftime(DATETIME_FORMAT)),
                                 headers={'Authorization': TAKHLIS_TOKEN, })
         data_old = response.json()['results']
-        return(pd.DataFrame(data_old))
+        df = pd.DataFrame(data_old)
+        df.columns = ['id','clicked','viewed']
+        return(df)
 
     @staticmethod
     def save_all_items(item_path='all_items.csv'): #this function saves a fucking 70 meg csv file which contains all ads /// It should be called every 5 days 
-        import psycopg2
-        import pandas as pd
-        import logging
 
         ITEM_POSTGRES = { #These should become defined on the server
             'host': '',
@@ -51,7 +52,7 @@ class DBUpdater():
         items = None #Free up ram's space
     @staticmethod
     def merge_two_df(from_takhlis,all_items_csv): # what ever you can solve with naming . do not solve with comment
-        new_items_df = pd.merge(from_takhlis,all_items_csv, how='inner', on='ad_id')
+        new_items_df = pd.merge(from_takhlis,all_items_csv, how='inner', on='id')
         return(new_items_df)
 
 
