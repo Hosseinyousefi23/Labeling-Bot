@@ -57,11 +57,11 @@ class DBUpdater():
 
 
     @staticmethod
-    def prepare_items_csv():
+    def prepare_items_csv(start=5, end=1):
         all_items = pd.read_csv(DBUpdater.all_items_path)
         del all_items['clicked']
         del all_items['viewed']
-        from_takhlis = DBUpdater.call_native_api()
+        from_takhlis = DBUpdater.call_native_api(from_date=start, to_date=end )
         new_items = DBUpdater.merge_two_df(from_takhlis, all_items)
         new_items = DBUpdater.remove_duplicates(new_items)
         if os.path.isfile(DBUpdater.items_path):
