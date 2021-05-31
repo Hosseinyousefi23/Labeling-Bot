@@ -115,8 +115,10 @@ class User(Alchemy.Base):
     #########################################################################
 
     def __init__(self, tele_id):
-        self.all_poems = list(pd.read_csv('poems.csv', header=None).iloc[:,0])
-        self.remaining_poems= self.all_poems
+        self.remaining_poems = []
+        if os.path.isfile('poems.csv'):
+            self.all_poems = list(pd.read_csv('poems.csv', header=None).iloc[:,0])
+            self.remaining_poems= self.all_poems
         self.chat_id = None
         self.user_id = tele_id
         self.labeled_ad = dict()
@@ -127,7 +129,7 @@ class User(Alchemy.Base):
         # add to local ads dict
         self.labeled_ad[str(ad_obj.id)] = labels
     def prepare_new_poem(self):
-        if len(self.remaining_poems==0):
+        if len(self.remaining_poems) == 0:
             self.remaining_poems = self.all_poems
         poem = self.remaining_poems[0]
         self.remaining_poems.remove(self.remaining_poems[0])
