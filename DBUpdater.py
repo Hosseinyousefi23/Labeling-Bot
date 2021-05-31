@@ -23,7 +23,7 @@ class DBUpdater():
                                 headers={'Authorization': TAKHLIS_TOKEN, })
         data_old = response.json()['results']
         df = pd.DataFrame(data_old)
-        df.columns = ['id','clicked','viewed']
+        df.columns = ['id','viewed','clicked']
         return(df)
 
     @staticmethod
