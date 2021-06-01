@@ -35,7 +35,7 @@ class DBHandler():
     We will save the local data to the output csv file every 100 labels added. Then we're gonna read next 100 rows and save as local table
     '''
     # columns of main table (which will be written in the output_file.csv) = ad_id, label, labeler_userid (user id is either tele_id or firstame//lastname) , advertiser_id, campaing_id
-    size_of_batch = 30 # how many ads we collect from data file and use as local. Default : 100
+    size_of_batch = 100 # how many ads we collect from data file and use as local. Default : 100
     ad_data_file_path = "items.csv"
     local_result_table = pd.DataFrame([], columns=["ad_id", "labels", "labeler_userid", "advertiser_id", "campaign_id"])
     result_file_path = 'result.csv'
@@ -128,10 +128,14 @@ class User(Alchemy.Base):
         # add to local ads dict
         self.labeled_ad[str(ad_obj.id)] = labels
     def prepare_new_poem(self):
-
-        if len(self.all_poems) == 0:
+        try:
+            if len(self.all_poems) == 0:
+                if os.path.isfile('poems.csv'):
+                    self.all_poems = list(pd.read_csv('poems.csv', header=None).iloc[:, 0])
+        except: #when there is not self.all_poems:
             if os.path.isfile('poems.csv'):
                 self.all_poems = list(pd.read_csv('poems.csv', header=None).iloc[:, 0])
+
         poem = self.all_poems[0]
         self.all_poems.remove(self.all_poems[0])
         return(poem)
